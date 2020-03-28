@@ -21,6 +21,8 @@ def embedding_training(args, train_graph_filename):
         g = read_for_gae(train_graph_filename)
     elif args.method == 'SVD':
         g = read_for_SVD(train_graph_filename, weighted=args.weighted)
+    elif args.method == 'ProNetMF':
+        g = read_for_SVD(train_graph_filename, weighted=args.weighted)
     else:
         g = read_for_OpenNE(train_graph_filename, weighted=args.weighted)
 

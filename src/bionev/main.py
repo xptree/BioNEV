@@ -65,6 +65,7 @@ def parse_args():
         'LINE',
         'SDNE',
         'GAE'
+        'ProNetMF'
     ], help='The embedding learning method')
     parser.add_argument('--label-file', default='',
                         help='The label file for node classification')
