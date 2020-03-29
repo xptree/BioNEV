@@ -7,6 +7,7 @@ import os
 import random
 import time
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+import optuna
 
 import numpy as np
 
@@ -127,13 +128,32 @@ def parse_args():
     return args
 
 
-def main(args):
+#  def main(args):
+
+def main(trials=None):
+    args = parse_args()
+    if trials is not None:
+        params = {
+            'C': trials.suggest_loguniform('C', 1e-10, 1e10),
+            'window_size': trials.suggest_int('window_size', 1, 20),
+            'pro_steps': trials.suggest_int('pro_steps', 1, 20),
+            'pro_mu': trials.suggest_uniform('pro_mu', -1.0, 1.0),
+            'pro_theta': trials.suggest_uniform('pro_theta', -1.0, 1.0),
+            'output': "%s_trial_%s" % (args.output, str(trials.number))
+        }
+        dargs = vars(args)
+        dargs.update(params)
+    print(args)
+
+    seed = args.seed
+    random.seed(seed)
+    np.random.seed(seed)
     print('#' * 70)
     print('Embedding Method: %s, Evaluation Task: %s' % (args.method, args.task))
     print('#' * 70)
 
     if args.task == 'link-prediction':
-        G, G_train, testing_pos_edges, train_graph_filename = split_train_test_graph(args.input, args.seed, weighted=args.weighted)
+        G, G_train, testing_pos_edges, train_graph_filename = split_train_test_graph(args.input, args.seed, weighted=args.weighted, trial_number=trials.number)
         time1 = time.time()
         embedding_training(args, train_graph_filename)
         embed_train_time = time.time() - time1
@@ -197,13 +217,23 @@ def main(args):
         with open(args.eval_result_file, 'a+') as wf:
             print(json.dumps(_results, sort_keys=True), file=wf)
 
+        if args.task == 'link-prediction':
+            return auc_roc
+        else:
+            return accuracy
+
 
 def more_main():
-    args = parse_args()
-    seed = args.seed
-    random.seed(seed)
-    np.random.seed(seed)
-    main(parse_args())
+    #  args = parse_args()
+    #  seed = args.seed
+    #  random.seed(seed)
+    #  np.random.seed(seed)
+    study = optuna.study.create_study(storage="sqlite:///example.db", study_name='bionev', direction='maximize', load_if_exists=True)
+    study.optimize(main, n_trials=1000, n_jobs=10)
+    trial = study.best_trial
+    print('Best obj: {}'.format(trial.value))
+    print("Best hyperparameters: {}".format(trial.params))
+    #  main(parse_args())
 
 
 if __name__ == "__main__":

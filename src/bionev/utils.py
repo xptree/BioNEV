@@ -25,7 +25,6 @@ def read_for_struc2vec(filename):
     print("Graph Loaded...")
     return G
 
-
 def read_for_gae(filename, weighted=False):
     print("Loading training graph for learning embedding...")
     edgelist = np.loadtxt(filename, dtype='float')
@@ -49,8 +48,8 @@ def read_for_SVD(filename, weighted=False):
     return G
 
 
-def split_train_test_graph(input_edgelist, seed, testing_ratio=0.2, weighted=False):
-    
+def split_train_test_graph(input_edgelist, seed, testing_ratio=0.2, weighted=False, trial_number=0):
+
     if (weighted):
         G = nx.read_weighted_edgelist(input_edgelist)
     else:
@@ -58,8 +57,9 @@ def split_train_test_graph(input_edgelist, seed, testing_ratio=0.2, weighted=Fal
     node_num1, edge_num1 = len(G.nodes), len(G.edges)
     print('Original Graph: nodes:', node_num1, 'edges:', edge_num1)
     testing_edges_num = int(len(G.edges) * testing_ratio)
-    random.seed(seed)
-    testing_pos_edges = random.sample(G.edges, testing_edges_num)
+    local_random = random.Random()
+    local_random.seed(seed)
+    testing_pos_edges = local_random.sample(G.edges, testing_edges_num)
     G_train = copy.deepcopy(G)
     for edge in testing_pos_edges:
         node_u, node_v = edge
@@ -69,7 +69,7 @@ def split_train_test_graph(input_edgelist, seed, testing_ratio=0.2, weighted=Fal
     G_train.remove_nodes_from(nx.isolates(G_train))
     node_num2, edge_num2 = len(G_train.nodes), len(G_train.edges)
     assert node_num1 == node_num2
-    train_graph_filename = 'graph_train.edgelist'
+    train_graph_filename = 'graph_train.edgelist_%s' % str(trial_number)
     if weighted:
         nx.write_edgelist(G_train, train_graph_filename, data=['weight'])
     else:
