@@ -64,7 +64,7 @@ def parse_args():
         'struc2vec',
         'LINE',
         'SDNE',
-        'GAE'
+        'GAE',
         'ProNetMF'
     ], help='The embedding learning method')
     parser.add_argument('--label-file', default='',
@@ -110,6 +110,18 @@ def parse_args():
                         help='gae model selection: gcn_ae or gcn_vae')
     parser.add_argument('--eval-result-file', help='save evaluation performance')
     parser.add_argument('--seed',default=0, type=int,  help='seed value')
+
+    # for pronetmf
+    parser.add_argument("--rank", default=256, type=int,
+            help="#eigenpairs used to approximate normalized graph laplacian.")
+    parser.add_argument("--pro-steps", default=10, type=int,
+            help="propagation steps")
+    parser.add_argument("--pro-mu", default=0.2, type=float,
+            help="propagation mu")
+    parser.add_argument("--pro-theta", default=0.5, type=float,
+            help="propagation theta")
+    parser.add_argument('--C', default=1.0, type=float, help='regularization term')
+
     args = parser.parse_args()
 
     return args
@@ -129,7 +141,7 @@ def main(args):
         embedding_look_up = load_embedding(args.output)
         time1 = time.time()
         print('Begin evaluation...')
-        result = LinkPrediction(embedding_look_up, G, G_train, testing_pos_edges,args.seed)
+        result = LinkPrediction(embedding_look_up, G, G_train, testing_pos_edges,args.seed, C=args.C)
         eval_time = time.time() - time1
         print('Prediction Task Time: %.2f s' % eval_time)
         os.remove(train_graph_filename)
@@ -145,7 +157,7 @@ def main(args):
         embedding_look_up = load_embedding(args.output, node_list)
         time1 = time.time()
         print('Begin evaluation...')
-        result = NodeClassification(embedding_look_up, node_list, labels, args.testingratio, args.seed)
+        result = NodeClassification(embedding_look_up, node_list, labels, args.testingratio, args.seed, C=args.C)
         eval_time = time.time() - time1
         print('Prediction Task Time: %.2f s' % eval_time)
     else:

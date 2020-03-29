@@ -8,7 +8,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from bionev.utils import *
 
 
-def LinkPrediction(embedding_look_up, original_graph, train_graph, test_pos_edges, seed):
+def LinkPrediction(embedding_look_up, original_graph, train_graph, test_pos_edges, seed, C):
     random.seed(seed)
 
     train_neg_edges = generate_neg_edges(original_graph, len(train_graph.edges()), seed)
@@ -64,7 +64,7 @@ def LinkPrediction(embedding_look_up, original_graph, train_graph, test_pos_edge
     X_test = np.array(X_test)
     y_test = np.array(y_test)
 
-    clf1 = LogisticRegression(random_state=seed, solver='lbfgs')
+    clf1 = LogisticRegression(random_state=seed, solver='lbfgs', max_iter=1000, C=C)
     clf1.fit(X_train, y_train)
     y_pred_proba = clf1.predict_proba(X_test)[:, 1]
     y_pred = clf1.predict(X_test)
@@ -78,7 +78,7 @@ def LinkPrediction(embedding_look_up, original_graph, train_graph, test_pos_edge
     return auc_roc, auc_pr, accuracy, f1
 
 
-def NodeClassification(embedding_look_up, node_list, labels, testing_ratio, seed):
+def NodeClassification(embedding_look_up, node_list, labels, testing_ratio, seed, C):
 
     X_train, y_train, X_test, y_test = split_train_test_classify(embedding_look_up, node_list, labels,
                                                                  testing_ratio=testing_ratio,seed=seed)
@@ -87,7 +87,7 @@ def NodeClassification(embedding_look_up, node_list, labels, testing_ratio, seed
     binarizer.fit(y_all)
     y_train = binarizer.transform(y_train).todense()
     y_test = binarizer.transform(y_test).todense()
-    model = OneVsRestClassifier(LogisticRegression(random_state=seed, solver='lbfgs'))
+    model = OneVsRestClassifier(LogisticRegression(random_state=seed, solver='lbfgs', max_iter=1000, C=C))
     model.fit(X_train, y_train)
     y_pred_prob = model.predict_proba(X_test)
 

@@ -10,6 +10,7 @@ from gensim.models.word2vec import LineSentence
 from bionev.GAE.train_model import gae_model
 from bionev.OpenNE import gf, grarep, hope, lap, line, node2vec, sdne
 from bionev.SVD.model import SVD_embedding
+from bionev.ProNetMF.ProNetMF import netmf_large, spectral_propagation
 from bionev.struc2vec import struc2vec
 from bionev.utils import *
 
@@ -76,6 +77,17 @@ def _embedding_training(args, G_=None):
         model.save_embeddings(args.output, node_list)
     elif args.method == 'SVD':
         SVD_embedding(G_, args.output, size=args.dimensions)
+    elif args.method == 'ProNetMF':
+        logging.basicConfig(level=logging.INFO,
+                format='%(asctime)s %(message)s') # include timestamp
+        emb = netmf_large(G_, window=args.window_size, rank=args.rank, dim=args.dimensions, negative=1.0)
+        if args.pro_steps > 0:
+            emb = spectral_propagation(emb, G_, dim=args.dimensions, pro_steps=args.pro_steps, pro_mu=args.pro_mu, pro_theta=args.pro_theta)
+        with open(args.output, "w") as fout:
+            fout.write("{} {}\n".format(G_.number_of_nodes(), args.dimensions))
+            for i, node in enumerate(G_.nodes()):
+                vec = emb[i]
+                fout.write("{} {}\n".format(node, ' '.join([str(x) for x in vec])))
     else:
         if args.method == 'Laplacian':
             model = lap.LaplacianEigenmaps(G_, rep_size=args.dimensions)
